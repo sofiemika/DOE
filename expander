@@ -1,0 +1,19 @@
+import numpy as np
+import matplotlib
+
+# beam after single mode fiber (SMF) diverges like Gaussian beam:
+# theta = wavelength/(pi*waist)
+
+def radial_beam_divergence(wavelength, waist):
+    theta = wavelength/(np.pi * waist)
+    return theta
+
+def expander(wavelength, waist, radius_DOE):
+    # length z:
+    z = radius_DOE / np.tan(radial_beam_divergence(wavelength, waist))
+    # thickness d:
+    d = np.tan(radial_beam_divergence(wavelength, waist)) * z
+    print(f"expander length for DOE radius {radius_DOE*1e6} µm: {z*1e6} µm")
+    print(f"expander thickness: {d*1e6} µm")
+    
+expander(660e-9, 2.3e-6, 768e-6)
