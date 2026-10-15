@@ -1,0 +1,3 @@
+# far_field_pitch = (wavelength * f) / (N * pitch)
+
+print(512*8e-6)

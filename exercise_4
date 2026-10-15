@@ -1,0 +1,127 @@
+import numpy as np
+import matplotlib.pyplot as plt
+
+# Goal: represent a light field as complex array U = A·exp(iφ). 
+# GS is nothing more thanrepeatedly swapping the amplitude part 
+# of this array while keeping the phase
+# U(x,y) = A(x,y)\, e^{i\varphi(x,y)}
+
+# Python writes i as 1j. Create z = 3 + 4i and print its 
+# magnitude,angle (radians) and real/imaginary parts.
+z = 3 + 4j
+# extract real and imag part:
+real_part = z.real
+imag_part = z.imag
+# magnitude and phase angle (rad):
+magnitude = np.abs(z)
+angle_rad = np.angle(z)
+# print
+print(f"z =  {z}")
+print(f"Real part:         {real_part}")
+print(f"Imaginary part:    {imag_part}")
+print(f"Magnitude:         {magnitude}")
+print(f"Angle (rad):       {angle_rad:.4f}")
+
+# Rebuild z from magnitude 5 and that angle using 
+# np.exp(1j *angle). Check: you get 3 + 4i back 
+# (tiny rounding is fine).
+z_rebuilt = magnitude * np.exp(1j *angle_rad)
+print(f"z rebuilt:          {z_rebuilt}")
+
+# A complex field. Make U = Gaussian amplitude × exp(i·φ) 
+# with φ = 0 everywhere.Then with a random phase between 
+# 0 and 2π. Hint: np.random.rand. Plot np.abs(U) and 
+# np.angle(U) side by side
+
+def make_grid(N, pitch): # generates 2D matrix in meters
+    half_span = ((N - 1) / 2) * pitch
+    x_axis = np.linspace(-half_span, half_span, N)
+    y_axis = np.linspace(-half_span, half_span, N)
+    X, Y = np.meshgrid(x_axis, y_axis)
+    return X, Y
+
+def gaussian_beam(X, Y, waist): # computes Gaussian amplitude profile
+    R = np.sqrt(X**2 + Y**2)
+    return np.exp(-R**2 / (waist**2)) 
+
+def show_pair(img1, img2, x_coords, y_coords, title1, title2):
+    # dynamically extract the physical extent in mm from the coordinate variables
+    x_min, x_max = np.min(x_coords) * 1e3, np.max(x_coords) * 1e3
+    y_min, y_max = np.min(y_coords) * 1e3, np.max(y_coords) * 1e3
+    extent_mm = [x_min, x_max, y_min, y_max]
+    # create the layout
+    fig, axs = plt.subplots(1, 2, figsize=(12, 5))
+    # first image on the left:
+    im1 = axs[0].imshow(img1, cmap='viridis', extent=extent_mm)
+    axs[0].set_title(title1)
+    axs[0].set_xlabel("Position $x$ [mm]", fontsize=12)
+    axs[0].set_ylabel("Position $y$ [mm]", fontsize=12)
+    fig.colorbar(im1, ax=axs[0], shrink=0.8, label="Value [a.u.]")
+    # second image on the right:
+    im2 = axs[1].imshow(img2, cmap='viridis', extent=extent_mm)
+    axs[1].set_title(title2)
+    axs[1].set_xlabel("Position $x$ [mm]", fontsize=12)
+    axs[1].set_ylabel("Position $y$ [mm]", fontsize=12)
+    fig.colorbar(im2, ax=axs[1], shrink=0.8, label="Value [a.u.]")
+    
+    plt.tight_layout()
+    plt.show()
+    # Call for function:
+    # show_pair(img1=A, img2=target_amplitude, x_coords=X, y_coords=Y, title1="Input Gaussian Laser Profile", title2="Target Amplitude Mask")
+
+X, Y = make_grid(512, 8e-6)
+A_laser = gaussian_beam(X, Y, 1.5e-3)
+
+N=512
+pitch = 8e-6  # 8 µm in meters
+half_span = ((N - 1) / 2) * pitch
+
+# for phi = zero:
+phi_zero = np.zeros((N,N))
+U_zero = A_laser * np.exp(1j * phi_zero)
+
+show_pair(img1=np.abs(U_zero), img2=np.angle(U_zero), x_coords=X, y_coords=Y, title1="one", title2="two")
+
+# for phi = random:
+phi_random = np.random.rand(N, N) * (2 * np.pi)
+U_random = A_laser * np.exp(1j * phi_random)
+
+show_pair(img1=np.abs(U_random), img2=np.angle(U_random), x_coords=X, y_coords=Y, title1="one", title2="two")
+
+# phase ramp
+phi = (2 * np.pi * X) / 50e-6
+wrapped_phase = np.angle(np.exp(1j * phi))
+plt.figure(figsize=(7, 6))
+extent_mm = [-half_span * 1e3, half_span * 1e3, -half_span * 1e3, half_span * 1e3]
+plt.imshow(wrapped_phase, cmap='hsv', extent=extent_mm)
+plt.colorbar(label="Wrapped phase [rad]")
+plt.xlabel("Position $x$ [mm]")
+plt.ylabel("Position $y$ [mm]")
+plt.title("Linear phase ramp with phase wrapping ($-\\pi$ to $+\\pi$)")
+#plt.grid(color='white', linestyle='--', alpha=0.3)
+plt.show()
+
+# Write a function replace_amplitude(U, A_new) that keeps
+# the phase of U but sets its magnitude to A_new:
+def replace_amplitude(U, A_new):
+    # extract phase angle from field U:
+    phase = np.angle(U)
+    # combine new amplitude with original phase info:
+    U_new = A_new * np.exp(1j * phase)
+    return U_new
+
+# Lens phase. Compute a thin-lens phase φ = −π(X² + Y²) / (λ f) 
+# for f = 200 mm andplot the wrapped version.
+f = 0.2 #(200 mm in m)
+wavelength = 633e-9
+phi_lens = -np.pi*((X**2+Y**2)/(wavelength * f))
+wrapped_phase = np.angle(np.exp(1j * phi_lens))
+plt.figure(figsize=(7, 6))
+extent_mm = [-half_span * 1e3, half_span * 1e3, -half_span * 1e3, half_span * 1e3]
+plt.imshow(wrapped_phase, cmap='hsv', extent=extent_mm)
+plt.colorbar(label="Wrapped phase [rad]")
+plt.xlabel("Position $x$ [mm]")
+plt.ylabel("Position $y$ [mm]")
+plt.title("Linear phase ramp with phase wrapping ($-\\pi$ to $+\\pi$)")
+#plt.grid(color='white', linestyle='--', alpha=0.3)
+plt.show()

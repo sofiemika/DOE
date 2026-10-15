@@ -1,0 +1,16 @@
+import numpy as np
+import matplotlib
+
+error = 1.0
+step_count = 0
+# start values
+
+while error >= 0.01:
+    variable = error = error * 0.8
+    # multiplies error by 0.8
+    step_count += 1
+    # counts steps each loop +1
+print(f"Steps taken: {step_count}")
+# prints the number of steps taken until error is less than 0.01
+print(f"Final error: {error:.2f}")
+# prints the final error value after the loop ends

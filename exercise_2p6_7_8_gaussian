@@ -1,0 +1,51 @@
+import numpy as np
+import matplotlib
+
+N = 512
+pitch = 8e-6  # pixel size in meters (8 µm)
+
+half_span = ((N - 1) / 2) * pitch
+x_axis = np.linspace(-half_span, half_span, N) # linearly spaced values from -half_span to half_span
+y_axis = np.linspace(-half_span, half_span, N)
+
+X, Y = np.meshgrid(x_axis, y_axis) # creates 2D grid from 1D coordinate vectors
+
+R = np.sqrt(X**2 + Y**2) 
+mask = R <= 1.5e-3  
+print(f"Fraction of True pixels: {np.sum(mask) / mask.size:.4f}")
+
+# Make a Gaussian amplitude A = exp(−R² / w²) with 
+# waist w = 1.5mm. This will be your incident laser 
+# beam. Check: centre value 1, value at R = w is 
+# about 0.37.
+
+w = 1.5e-3  # waist in meters
+A = np.exp(-R**2 / (w**2)) # computes the Gaussian amplitude
+print(f"Centre value: {A[N//2, N//2]:.4f}") # prints the value at the center of the grid, which should be 1
+print(f"Value at R = w: {np.exp(-1):.4f}") # prints the value of the Gaussian at R = w, because A = exp(-R² / w²) -> exp(-1), which should be approximately 0.37
+
+# For the Gaussian, print max, min, mean and the total 
+# power (sum of A²). Why it matters: you will measure 
+# efficiency and uniformity this way in Phase 7.
+print(f"Max value: {A.max():.4f}")
+print(f"Min value: {A.min():.4f}")
+print(f"Mean value: {A.mean():.4f}") # this computes the mean value of the Gaussian amplitude across the grid
+print(f"Total power: {np.sum(A**2):.4f}") # this computes the total power by summing the square of the amplitude A, which is proportional to intensity.
+
+# Wrap it. Write a function make_grid(n, pitch) 
+# returning X, Y, and a function 
+# gaussian_beam(X, Y, waist). Save them in a file 
+# doe_tools.py. From now on, every exercise imports 
+# from this file — this is the start of your final 
+# program.
+
+def make_grid(N, pitch):
+    half_span = ((N - 1) / 2) * pitch
+    x_axis = np.linspace(-half_span, half_span, N)
+    y_axis = np.linspace(-half_span, half_span, N)
+    X, Y = np.meshgrid(x_axis, y_axis)
+    return X, Y
+
+def gaussian_beam(X, Y, waist):
+    R = np.sqrt(X**2 + Y**2)
+    return np.exp(-R**2 / (waist**2))

@@ -1,0 +1,28 @@
+import numpy as np
+import matplotlib
+
+N = 512
+pitch = 8e-6  # pixel size in meters (8 µm)
+
+half_span = ((N - 1) / 2) * pitch
+x_axis = np.linspace(-half_span, half_span, N) # linearly spaced values from -half_span to half_span
+y_axis = np.linspace(-half_span, half_span, N)
+
+X, Y = np.meshgrid(x_axis, y_axis) # creates 2D grid from 1D coordinate vectors
+
+#From X and Y, compute the radius R and make a 
+# boolean mask that is True inside a 3 mm diameter 
+# circle. Hint: comparisons on arrays give arrays of
+# True/False. Check:
+# fraction of True pixels ≈ π·1.5² / 4.096² ≈ 0.42.
+
+R = np.sqrt(X**2 + Y**2) 
+# computes the radius R from the center of the grid
+# coordinates are now real physical distance from center in meters
+# coordinates get bigger as you move away from the center of the grid
+mask = R <= 1.5e-3  
+# "true" inside the circle, "false" outside
+# so it's true until the radius is bigger than 1.5 mm, then it's false
+print(f"Fraction of True pixels: {np.sum(mask) / mask.size:.4f}")
+
+

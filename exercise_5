@@ -1,0 +1,262 @@
+import numpy as np
+import matplotlib.pyplot as plt
+
+# Goal: simulate what a DOE produces in the focal plane of a lens 
+# (Fraunhofer far field).Mathematically that is a 2D Fourier transform, 
+# which NumPy computes with np.fft.fft2 ; going back uses np.fft.ifft2 .
+
+# Make a 1D array of 256 zeros with a block of 20 ones in the middle. 
+# Take np.fft.fft and plot its absolute value. Then plot it again after
+# np.fft.fftshift . Check: after the shift you see a sinc shape centred 
+# in the plot. Explain in one sentence what fftshift did: centers maximum
+
+N = 256
+array0 = np.zeros(N) # zero array
+start_idx = (N-20) // 2
+array0[start_idx : start_idx+20] = 1 # 20 elements in center = 1
+
+# FFT:
+fft_raw = np.fft.fft(array0)
+abs_fft_raw = np.abs(fft_raw)
+
+# FFT shift:
+fft_shift = np.fft.fftshift(fft_raw)
+abs_fft_shift = np.abs(fft_shift)
+
+def plot_both(a, b):
+    #plot:
+    fig, axs = plt.subplots(1, 2, figsize=(14, 5))
+
+    # Left Panel: Raw FFT output
+    axs[0].plot(a, color='crimson', linewidth=2)
+    axs[0].set_title("Raw Magnitude Spectrum (`np.fft.fft`)")
+    axs[0].set_xlabel("Frequency Index")
+    axs[0].set_ylabel("Absolute Amplitude")
+    axs[0].grid(True, linestyle='--', alpha=0.6)
+
+    # Right Panel: Shifted FFT output (Standard sinc profile representation)
+    axs[1].plot(b, color='dodgerblue', linewidth=2)
+    axs[1].set_title("Centered Magnitude Spectrum (`np.fft.fftshift`)")
+    axs[1].set_xlabel("Centered Frequency Index")
+    axs[1].set_ylabel("Absolute Amplitude")
+    axs[1].grid(True, linestyle='--', alpha=0.6)
+
+    plt.tight_layout()
+    plt.show()
+
+#plot_both(abs_fft_raw, abs_fft_shift)
+
+# Apply fft2 then ifft2 to your Gaussian field. Check: the 
+# result equals the original (compare with np.allclose)
+
+def make_grid(N, pitch): # generates 2D matrix in meters
+    half_span = ((N - 1) / 2) * pitch
+    x_axis = np.linspace(-half_span, half_span, N)
+    y_axis = np.linspace(-half_span, half_span, N)
+    X, Y = np.meshgrid(x_axis, y_axis)
+    x_min, x_max = np.min(x_axis) * 1e3, np.max(x_axis) * 1e3
+    y_min, y_max = np.min(y_axis) * 1e3, np.max(y_axis) * 1e3
+    extent_mm = [x_min, x_max, y_min, y_max]
+    return X, Y, extent_mm
+
+def gaussian_beam(X, Y, waist): # computes Gaussian amplitude profile
+    R = np.sqrt(X**2 + Y**2)
+    return np.exp(-R**2 / (waist**2)) 
+
+X, Y, extent_mm = make_grid(512, 8e-6)
+A_laser = gaussian_beam(X, Y, 1.5e-3)
+
+#Round trip. Apply fft2 then ifft2to your Gaussian field. Check:
+# the resultequals the original (compare with np.allclose).
+fft_laser = np.fft.fft2(A_laser)
+abs_fft_laser = np.abs(fft_laser)
+ifft_fft_laser = np.fft.ifft2(fft_laser)
+abs_ifft_fft_laser = np.abs(ifft_fft_laser)
+
+def show_pair(img1, img2, x_axis, y_axis , title1, title2):
+    # dynamically extract the physical extent in mm from the coordinate variables
+    x_min, x_max = np.min(x_axis) * 1e3, np.max(x_axis) * 1e3
+    y_min, y_max = np.min(y_axis) * 1e3, np.max(y_axis) * 1e3
+    extent_mm = [x_min, x_max, y_min, y_max]
+    # create the layout
+    fig, axs = plt.subplots(1, 2, figsize=(12, 5))
+    # first image on the left:
+    im1 = axs[0].imshow(img1, cmap='viridis', extent=extent_mm)
+    axs[0].set_title(title1)
+    axs[0].set_xlabel("Position $x$ [mm]", fontsize=12)
+    axs[0].set_ylabel("Position $y$ [mm]", fontsize=12)
+    fig.colorbar(im1, ax=axs[0], shrink=0.8, label="Value [a.u.]")
+    # second image on the right:
+    im2 = axs[1].imshow(img2, cmap='viridis', extent=extent_mm)
+    axs[1].set_title(title2)
+    axs[1].set_xlabel("Position $x$ [mm]", fontsize=12)
+    axs[1].set_ylabel("Position $y$ [mm]", fontsize=12)
+    fig.colorbar(im2, ax=axs[1], shrink=0.8, label="Value [a.u.]")
+    
+    plt.tight_layout()
+    plt.show()
+
+#show_pair(img1=abs_fft_laser, img2=abs_ifft_fft_laser, x_axis=X, y_axis=Y, title1="FFT of Gaussian field", title2="iFFT of FFT of Gaussian field")
+
+np.allclose(A_laser, abs_ifft_fft_laser)
+print(np.allclose(A_laser, abs_ifft_fft_laser))
+
+# Far field of a flat beam. Propagate the Gaussian with zero 
+# phase to the far field and plot intensity |U|². Check:
+# single small spot in the centre - a lens focusing a beam.
+
+def phi_zero(N):
+    phi_zero = np.zeros((N,N))
+    return phi_zero
+
+def U_source(A, phi):
+    U = A * np.exp(1j * phi)
+    return U
+
+U_far_raw = np.fft.fft2(U_source(A_laser, phi_zero(512)))
+abs_U_far_raw = np.abs(U_far_raw)
+U_far_shift = np.fft.fftshift(U_far_raw)
+#plot_both(U_far_raw, U_far_raw_shift)
+
+I_far = np.abs(U_far_shift)**2
+
+#plot_both(U_far_raw_shift, np.abs(U_far))
+#show_pair(img1=A_laser, img2=np.abs(U_far), x_axis=X, y_axis=Y, title1="Gaussian field", title2="Far field")
+
+# Far-field coordinates:
+# Far-field pixel spacing formula: 
+# delta_x = (wavelength * focal) / (N * pitch)
+def make_grid_far(wavelength, f, N, pitch):
+    far_field_pitch = (wavelength * f) / (N * pitch)
+    far_field_half_span = ((N - 1) / 2) * far_field_pitch
+    # Convert to millimeters for scale
+    extent_far_mm = [-far_field_half_span * 1e3, far_field_half_span * 1e3, 
+                     -far_field_half_span * 1e3, far_field_half_span * 1e3]
+    return extent_far_mm
+
+extent_far_mm = make_grid_far(633e-9, 50e-3, 512, 8e-6)
+
+##show_pair(img1=A_laser**2, img2=I_far, x_axis=X, y_axis=Y, title1="Gaussian field", title2="Far field")
+
+def show_pair_extent(img1, extent1, title1, img2, extent2, title2):
+    fig, axs = plt.subplots(1, 2, figsize=(12, 5))
+    # first image on the left:
+    im1 = axs[0].imshow(img1, cmap='viridis', extent=extent1)
+    axs[0].set_title(title1)
+    axs[0].set_xlabel("Position x / mm", fontsize=12)
+    axs[0].set_ylabel("Position y / mm", fontsize=12)
+    fig.colorbar(im1, ax=axs[0], shrink=0.8, label="Value [a.u.]")
+    # second image on the right:
+    im2 = axs[1].imshow(img2, cmap='viridis', extent=extent2)
+    axs[1].set_title(title2)
+    axs[1].set_xlabel("Position x / mm", fontsize=12)
+    axs[1].set_ylabel("Position y / mm", fontsize=12)
+    fig.colorbar(im2, ax=axs[1], shrink=0.8, label="Value [a.u.]")
+    
+    plt.tight_layout()
+    plt.show()
+
+####show_pair_extent(A_laser, extent_mm, "Gaussian intensity profile", I_far, extent_far_mm, "Far field intensity profile")
+
+def show_one_extent(img1, extent1, title1):
+    plt.figure(figsize=(7, 6))
+    # use 'inferno' or 'viridis' colormap to clearly see intensity gradients
+    plt.imshow(img1, cmap='inferno', extent=extent1)
+
+    plt.colorbar(label="Intensity $|U|^2$ [a.u.]")
+    plt.xlabel("Position x / mm")
+    plt.ylabel("Position y / mm")
+    plt.title(title1)
+    plt.grid(color='white', linestyle='--', alpha=0.2)
+
+    plt.show()
+
+#####show_one_extent(I_far, extent_far_mm, "Intensity far field")
+
+
+# Propagate the 3 mm circular aperture. Use a log scale 
+# to see faint rings. Hint: np.log10(I + 1e-12)
+def circular_aperture(radius):
+    R = np.sqrt(X**2 + Y**2)
+    mask = R < radius
+    return mask
+
+#U_far_circ_raw = np.fft.fft2(U_source(circular_aperture(1.5e-3), phi_zero))
+#U_far_circ_shift = np.fft.fftshift(U_far_circ_raw)
+#I_far_circ = np.abs(U_far_circ_shift)**2
+
+def propagate_U_int(U):
+    U_source = U
+    V_far_raw = np.fft.fft2(U_source, norm="ortho") #norm="ortho" makes it unitary
+    V_far_shift = np.fft.fftshift(V_far_raw)
+    I_far = np.abs(V_far_shift)**2
+    return I_far
+
+def propagate(U):
+    U_uncentered = np.fft.ifftshift(U)
+    V_raw = np.fft.fft2(U_uncentered, norm="ortho") #norm="ortho" makes it unitary
+    V_centered = np.fft.fftshift(V_raw)
+    return V_centered
+
+def backpropagate(V):
+    V_uncentered = np.fft.ifftshift(V)
+    U_raw = np.fft.ifft2(V_uncentered, norm="ortho")
+    U_centered = np.fft.fftshift(U_raw)
+    return U_centered
+
+I_circular_aperture = propagate_U_int(U_source(circular_aperture(1.5e-4), phi_zero(512)))
+I_log = np.log10(I_circular_aperture + 1e-12)
+
+# Tell Matplotlib's global state to constrain the next drawing instructions
+#show_one_extent(I_log, extent_far_mm, "Airy pattern")
+
+def phi_phaseramp(period): #period in meters
+    phi = (2 * np.pi * X) / period
+    wrapped_phase = np.angle(np.exp(1j * phi))
+    return wrapped_phase
+
+def phi_random(N):
+    phi = (np.random.rand(N, N) * (2 * np.pi))
+    return phi
+
+I_gaussian_phaseramp = propagate_U_int(U_source(A_laser, phi_phaseramp(50e-6)))
+#####show_one_extent(I_gaussian_phaseramp, extent_far_mm, "Gaussian and phaseramp")
+
+show_pair_extent(I_gaussian_phaseramp, extent_far_mm, "Gaussian and phaseramp", I_far, extent_mm, "Gaussian")
+
+#check how much spot is shifted by phase ramp: 
+# Δx_out = λ·f / (N·Δx_in), N*Δx_in = grating period
+###print(((633e-9 * 50e-3) / (50e-6))*1e3)
+
+# Write propagate(U) (field to far field, with the right 
+# fftshift/ifftshift placement and norm="ortho") and 
+# backpropagate(V). Test that one undoes the other.
+
+U_original = U_source(A_laser, phi_random(512))
+U_far = propagate(U_original)
+U_reconstructed = backpropagate(U_far)
+# Check absolute value mismatch and maximum individual entry variance
+total_absolute_error = np.sum(np.abs(U_original - U_reconstructed))
+max_coordinate_drift = np.max(np.abs(U_original - U_reconstructed))
+
+print(f"Total cumulative grid error: {total_absolute_error:.2e}")
+print(f"Maximum pixel peak variance: {max_coordinate_drift:.2e}")
+print(f"Unitary power conservation check: Is energy identical? {np.allclose(U_original, U_reconstructed)}")
+
+power_original = np.sum(np.abs(U_original)**2)
+power_far = np.sum(np.abs(U_far)**2)
+power_reconstructed = np.sum(np.abs(U_reconstructed)**2)
+
+print(power_original, power_far, power_reconstructed)
+conservation_check = np.isclose(power_original, power_far)
+print(f"Conservation check? {conservation_check}")
+# Den exakten Unterschied berechnen
+difference = np.abs(power_original - power_far)
+print(f"Absolute difference: {difference:.2e}")
+
+U_random = U_source(A_laser, phi_random(512))
+I_random = np.abs(U_random)**2
+U_random_far = propagate(U_random)
+I_random_far = np.abs(U_random_far)**2
+show_pair_extent(I_random, extent_far_mm, "random phase near field", I_random_far, extent_far_mm, "random phase far field")
+

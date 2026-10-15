@@ -1,0 +1,44 @@
+import numpy as np
+import matplotlib
+import time # for time measurement
+
+#Multiply the whole array by 2 and square it — no loop. Then time aPython loop doing the same on 1 million numbers vs NumPy
+
+
+#calculate it as numpy array:
+my_array = np.arange(0, 1000000, 1)
+# creates an array of numbers: starts from x, stops before y, step size z
+result = (my_array * 2)**2
+print(f"Result: {result}")
+print("Result:", (my_array * 2)**2)
+
+
+# time measurements, compare numpy array va loops:
+N = 1000000
+
+# time measurement numpy array:
+
+t0 = time.perf_counter() # start time measurement
+
+arr_large = np.arange(0, N, 1) # create an array of numbers from 0 to N-1
+res_np = (arr_large * 2)**2 # calculate (x*2)^2 for each number in the array
+
+t1 = time.perf_counter() # end time measurement
+numpy_time = t1 - t0
+
+
+# time measurement loop:
+
+t0 = time.perf_counter() # start time measurement
+
+py_list = list(range(N)) # create a list of numbers from 0 to N-1
+res_py = [] # the result list for the loop
+for x in py_list: # loop through the list of numbers and calculate (x*2)^2 for each number
+    res_py.append((x * 2)**2)
+
+t2 = time.perf_counter() # end time measurement
+loop_time = t2 - t0
+
+# print results:
+print(f"Time taken for numpy array: {numpy_time:.6f} seconds")
+print(f"Time taken for loop: {loop_time:.6f} seconds")

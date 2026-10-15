@@ -1,0 +1,14 @@
+import numpy as np
+import matplotlib
+
+# Create a 512 × 512 array of zeros and one of ones. Set the central 100 ×100 square of the zeros array to 1.
+
+
+arr0 = np.array([[0] * 512] * 512) # creates a 2D array of zeros with shape (512, 512)
+print(f"Shape: {arr0.shape}") # prints the shape of the array, which should be (512, 512)
+
+arr1 = np.array([[1] * 512] * 512) # creates a 2D array of ones with shape (512, 512)
+
+arr0[206:306, 206:306] = arr1[206:306, 206:306] # replaces a 100x100 square in the center of arr0 with ones from arr1
+# or: arr0[206:306, 206:306] = 1 # replaces a 100x100 square in the center of arr0 with ones
+print(f"Sum: {arr0.sum()}") # prints the sum of all elements in arr0, which should be 10000 (100x100 ones)

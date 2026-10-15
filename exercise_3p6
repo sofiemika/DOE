@@ -1,0 +1,50 @@
+import numpy as np
+import matplotlib.pyplot as plt
+
+# load picture 
+img = plt.imread('X:/Dokumente/UpNano/images/upnano_256x256.png')
+print("image dimensions (shape):", img.shape)
+# convert to grayscales
+if img.ndim == 3:  # if image has RGB/RGBA channels (3rd dim)
+    # Standard to calculate in grayscales:
+    img_gray = 0.2989 * img[:,:,0] + 0.5870 * img[:,:,1] + 0.1140 * img[:,:,2]
+else:
+    img_gray = img
+
+# Put your loaded image in the centre of a 512 × 512 zero array 
+# (zero-padding). Why it matters: the target must be smaller than 
+# the full far-field window, or GS wastes light and gives poor results.
+N_full = 512
+# make zero array:
+padded_target = np.zeros((N_full, N_full))
+# start and end indices of center where image will be placed:
+# (512-256)/2 = 128 start; 512+256 = 768 end
+start_idx = (N_full - img_gray.shape[0]) // 2
+end_idx = start_idx + img_gray.shape[0]
+# embed logo via slicing in center
+padded_target[start_idx:end_idx, start_idx:end_idx] = img_gray
+# check:
+print("old shape:", img_gray.shape)
+print("new shape after zero padding", padded_target.shape)
+
+# normalise so that target total power equals total power
+# of Gaussian:
+w = 1.5e-3 
+pitch = 8e-6  # pixel size in meters (8 µm)
+N = 512
+half_span = ((N - 1) / 2) * pitch
+x_axis = np.linspace(-half_span, half_span, N)
+y_axis = np.linspace(-half_span, half_span, N)
+X, Y = np.meshgrid(x_axis, y_axis)
+R = np.sqrt(X**2 + Y**2)
+A = np.exp(-R**2 / (w**2)) # computes the Gaussian amplitude
+np.sum(A**2) # sum over all amplitude squares = intensity
+np.sum(padded_target**2)
+print(f"Gaussian intensity: {np.sum(A**2)}")
+print(f"Image intensity: {np.sum(padded_target)}")
+ratio = np.sum(padded_target) / np.sum(A**2)
+print(f"Image/Gaussian: {np.sum(ratio)}")
+intensity_normalised = padded_target / np.sum(ratio)
+print(f"Intensity normalised: {np.sum(intensity_normalised)}")
+amplitude_normalised = np.sqrt(intensity_normalised)
+print(f"Amplitude normalised: {np.sum(amplitude_normalised)}")

@@ -1,0 +1,28 @@
+import numpy as np
+import matplotlib
+
+# Using np.linspace and np.meshgrid, 
+# build X and Y coordinate grids for N = 512 pixels 
+# with pitch 8 μm, centred on zero. Check: 
+# X[0,0] is about −2.048 mm and X[0,-1] about +2.04 mm.
+
+# define parameters
+N = 512
+pitch = 8e-6  # pixel size in meters (8 µm)
+
+# Calculate total width and the coordinate boundaries
+# To perfectly center N elements on zero, the bounds 
+# are at ±(N-1)/2 * pitch
+half_span = ((N - 1) / 2) * pitch
+
+# Generate 1D coordinate vectors
+x_axis = np.linspace(-half_span, half_span, N) # linearly spaced values from -half_span to half_span
+y_axis = np.linspace(-half_span, half_span, N)
+
+# Generate 2D coordinate grid
+X, Y = np.meshgrid(x_axis, y_axis) # creates 2D grid from 1D coordinate vectors
+
+# Print properties to verify
+print("Grid Shape:", X.shape)
+print(f"X[0, 0]  (First pixel): {X[0, 0] * 1e3:.4f} mm")
+print(f"X[0, -1] (Last pixel):  {X[0, -1] * 1e3:.4f} mm")

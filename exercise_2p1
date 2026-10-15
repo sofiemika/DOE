@@ -1,0 +1,12 @@
+import numpy as np
+import matplotlib
+
+#NumPy arrays: how to store and compute2D grids of pixels without loops
+
+my_array = np.arange(0, 10, 1)
+# creates an array of numbers: starts from 0, stops before 10, step size 1
+# np.arange(10) would create an array of numbers from 0 to 9, step size 1
+print(my_array)
+print(f"Shape: {my_array.shape}")
+print("Dtype:", my_array.dtype)
+# two ways to write how to print shape and dtype of array

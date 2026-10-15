@@ -1,0 +1,26 @@
+import numpy as np
+import matplotlib
+
+variable = focal_length = 200e-3  # Focal length in meters (200 mm)
+variable = N = 512
+variable = x_in = 8e-6  # Input pixel size in meters (8 µm)
+wavelengths = [405e-9, 532e-9, 633e-9, 780e-9, 850e-9, 1064e-9] #wavelength list in m
+# list of wavelengths in meters
+
+def f_farfield_pixel_size(wave, focal_length, x_in, N=512): 
+    # function to calculate far-field pixel size based on wavelength, focal length, number of pixels, and input pixel size
+    f_x_out = (wave * focal_length) / (N * x_in)
+    # defines function
+    return f_x_out
+    # returns the calculated far-field pixel size
+
+for wave in wavelengths:
+    # calculate f_farfield_pixel_size for each wave in list wavelengths
+    ##result_default = f_farfield_pixel_size(wave, focal_length, x_in)
+    # function call to f_farfield_pixel_size with N fixed to 512 the current wavelength, and fixed focal length and x_in
+    ##   print(f"x_out for {wave*1e9:.0f} nm is {result_default*1e6:.2f} µm")
+    # prints result for each wavelength
+    result_custom = f_farfield_pixel_size(wave, focal_length, x_in, N=1024)
+    # function call to f_farfield_pixel_size with N fixed to 1024 the current wavelength, and fixed focal length and x_in
+    print(f"x_out for {wave*1e9:.0f} nm is {result_custom*1e6:.2f} µm")
+     # prints result for each wavelength
